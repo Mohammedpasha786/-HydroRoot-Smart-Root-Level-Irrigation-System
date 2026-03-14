@@ -1,0 +1,100 @@
+HydroRoot — Smart Root-Level Irrigation System
+A full-stack IoT solution for intelligent soil-moisture-based irrigation. Monitors moisture at the root level and automatically controls water pumps — saving water while keeping plants healthy.
+
+Features
+FeatureDescription Root-Level MonitoringCapacitive soil sensors near plant roots Auto IrrigationPump activates/stops based on moisture thresholds Live DashboardReal-time React web app with charts & stats IoT REST APIESP8266 exposes JSON endpoints over WiFi Water Usage TrackingLogs litres used vs. schedule-based irrigation Alert SystemEvent log for pump state changes
+
+Project Structure
+smart-irrigation/
+├── src/
+│   ├── App.jsx                  # Root React component
+│   ├── main.jsx                 # Entry point
+│   ├── styles.css               # Global styles
+│   ├── components/
+│   │   ├── Dashboard.jsx        # Overview tab
+│   │   ├── PlantCard.jsx        # Single plant widget
+│   │   ├── PlantGrid.jsx        # All-plants tab
+│   │   ├── WaterUsageChart.jsx  # Analytics tab
+│   │   └── AlertLog.jsx         # Alerts tab
+│   ├── data/
+│   │   └── plantData.js         # Seed data & history generator
+│   └── utils/
+│       └── irrigationLogic.js   # Threshold logic (shared with firmware)
+├── arduino/
+│   └── hydroroot_firmware.ino   # ESP8266 firmware
+├── docs/
+│   └── wiring_diagram.md        # Hardware wiring guide
+├── index.html
+├── package.json
+├── vite.config.js
+└── README.md
+
+Quick Start — Web Dashboard
+bash# 1. Install dependencies
+npm install
+
+# 2. Run development server
+npm run dev
+# → Open http://localhost:3000
+
+# 3. Build for production
+npm run build
+
+Hardware Setup
+
+Components Required
+ComponentQtyNotesESP8266 (NodeMCU)1WiFi microcontrollerCapacitive Soil Moisture Sensor v1.21+One per plant stationDHT221Temperature + humidity5V Relay Module1Controls pumpSubmersible Mini Pump (5V)1~200mL/min flow18650 Battery + TP40561Or USB power supplyJumper Wires, Tubing——
+Wiring
+ESP8266          Moisture Sensor     Relay       DHT22
+D1 (GPIO5)  ─────────────────────── IN
+A0          ── AOUT
+3.3V        ── VCC                              VCC
+GND         ── GND               GND           GND
+D2 (GPIO4)  ──────────────────────────────────  DATA
+
+
+Firmware Setup (Arduino IDE)
+
+Install ESP8266 board in Arduino IDE
+Preferences → Additional Boards Manager URLs:
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
+Install libraries:
+
+ArduinoJson by Benoit Blanchon
+DHT sensor library by Adafruit
+ESP8266WiFi (bundled with board package)
+
+
+Edit hydroroot_firmware.ino:
+
+cpp   const char* WIFI_SSID     = "YOUR_SSID";
+   const char* WIFI_PASSWORD = "YOUR_PASSWORD";
+   const char* PLANT_ID      = "P1";
+
+Calibrate the sensor constants for your soil type:
+
+cpp   #define SENSOR_DRY_RAW   820
+   #define SENSOR_WET_RAW   380
+
+Flash to NodeMCU (Board: NodeMCU 1.0, Upload Speed: 115200)
+
+REST API (ESP8266)
+
+Once flashed and connected, the device exposes:
+EndpointMethodDescriptionGET /statusGETFull sensor JSON snapshotGET /pump?state=onGETTurn pump on (disables auto)GET /pump?state=offGETTurn pump offGET /auto?enabled=trueGETEnable auto irrigationGET /auto?enabled=falseGETDisable auto irrigation
+Example Response — /status
+json{
+  "id": "P1",
+  "name": "Tomato Bed A",
+  "moisture": 27.3,
+  "temperature": 29.8,
+  "humidity": 61.2,
+  "pump": true,
+  "autoMode": true,
+  "waterUsed": 0.42,
+  "uptime": 3612
+}
+ Irrigation Logic
+moisture < 35%  →  Pump ON   (dry threshold)
+moisture ≥ 65%  →  Pump OFF  (wet threshold)
+The hysteresis gap (35–65%) prevents pump flutter. Thresholds are configurable per plant type.
