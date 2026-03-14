@@ -1,0 +1,18 @@
+export const initialPlants = [
+  { id: "P1", name: "Tomato Bed A", moisture: 25, temperature: 30, pump: true,  zone: "Zone 1", type: "Vegetable", threshold: 35 },
+  { id: "P2", name: "Herb Garden",  moisture: 60, temperature: 28, pump: false, zone: "Zone 1", type: "Herb",      threshold: 35 },
+  { id: "P3", name: "Rose Patch",   moisture: 20, temperature: 32, pump: true,  zone: "Zone 2", type: "Flower",    threshold: 40 },
+  { id: "P4", name: "Lawn Section", moisture: 70, temperature: 27, pump: false, zone: "Zone 2", type: "Grass",     threshold: 30 },
+  { id: "P5", name: "Pepper Row",   moisture: 28, temperature: 31, pump: true,  zone: "Zone 3", type: "Vegetable", threshold: 35 },
+  { id: "P6", name: "Fern Corner",  moisture: 55, temperature: 26, pump: false, zone: "Zone 3", type: "Ornamental",threshold: 50 },
+];
+
+export function generateHistoryData() {
+  const now = Date.now();
+  return Array.from({ length: 24 }, (_, i) => ({
+    time: new Date(now - (23 - i) * 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    avgMoisture: 30 + Math.random() * 40,
+    waterUsed: Math.random() * 8 + 1,
+    pumpsActive: Math.floor(Math.random() * 4),
+  }));
+}
