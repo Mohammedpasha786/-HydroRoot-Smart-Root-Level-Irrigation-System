@@ -1,0 +1,64 @@
+#  Wiring Diagram — HydroRoot
+
+## Full Schematic (ASCII)
+
+                        ┌─────────────────────────┐
+                        │       NodeMCU ESP8266    │
+                        │                          │
+  ┌──────────────┐      │  A0 ──────── AOUT        │
+  │  Soil Sensor │─────►│  3.3V ─────  VCC         │
+  │  (Cap. v1.2) │      │  GND ──────  GND         │
+  └──────────────┘      │                          │
+                        │  D2/GPIO4 ──── DATA ──────┤─► DHT22
+                        │  3.3V ──────── VCC  ──────┤
+                        │  GND ────────  GND  ──────┤
+                        │                          │
+  ┌──────────────┐      │  D1/GPIO5 ──── IN ────────┤─► Relay Module
+  │  Water Pump  │◄─────┤           COM/NO          │
+  └──────────────┘      │                          │
+        │               │  VIN (5V) ─── VCC Relay  │
+  ┌─────┴──────┐        │  GND ──────── GND Relay  │
+  │  5V Supply │        └─────────────────────────┘
+  └────────────┘
+```
+
+## Pin Reference
+
+| NodeMCU Pin | GPIO | Connected To | Notes |
+|---|---|---|---|
+| A0 | ADC0 | Soil Sensor AOUT | Analog moisture reading |
+| D1 | GPIO5 | Relay IN | Active LOW trigger |
+| D2 | GPIO4 | DHT22 DATA | 10kΩ pull-up to 3.3V |
+| D4 | GPIO2 | Built-in LED | Status indicator |
+| VIN | — | Relay VCC, Pump+ | 5V rail |
+| 3V3 | — | Sensor VCC, DHT VCC | 3.3V rail |
+| GND | — | All GND | Common ground |
+
+## Relay Wiring Detail
+
+Relay Module:
+  IN   ←── D1 (GPIO5) from ESP8266
+  VCC  ←── 5V (VIN)
+  GND  ←── GND
+
+  COM  ──── 5V positive rail
+  NO   ──── Pump positive wire (+)
+  Pump negative wire (−) ──── GND
+```
+ Always use a flyback diode (1N4007) across the pump terminals  
+> to suppress voltage spikes when the pump switches off.
+
+## Power Supply
+
+For field deployment (battery-powered):
+```
+18650 Li-Ion × 2 (series) → 7.4V
+       │
+    TP4056 charger module
+       │
+    MT3608 boost converter → 5V
+       │
+    NodeMCU VIN
+```
+
+For bench/indoor use: USB 5V adapter directly into NodeMCU USB port.
