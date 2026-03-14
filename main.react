@@ -1,0 +1,131 @@
+import { useState, useEffect, useCallback } from "react";
+import Dashboard from "./components/Dashboard";
+import PlantGrid from "./components/PlantGrid";
+import WaterUsageChart from "./components/WaterUsageChart";
+import AlertLog from "./components/AlertLog";
+import { initialPlants, generateHistoryData } from "./data/plantData";
+import { evaluatePump } from "./utils/irrigationLogic";
+import "./styles.css";
+
+export default function App() {
+  const [plants, setPlants] = useState(initialPlants);
+  const [history, setHistory] = useState(generateHistoryData());
+  const [alerts, setAlerts] = useState([]);
+  const [time, setTime] = useState(new Date());
+  const [autoMode, setAutoMode] = useState(true);
+  const [totalWaterSaved, setTotalWaterSaved] = useState(18.4);
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const addAlert = useCallback((msg, type = "info") => {
+    setAlerts(prev => [
+      { id: Date.now(), msg, type, time: new Date().toLocaleTimeString() },
+      ...prev.slice(0, 19),
+    ]);
+  }, []);
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setTime(new Date());
+      setPlants(prev =>
+        prev.map(p => {
+          const drift = (Math.random() - 0.48) * 1.2;
+          const newMoisture = Math.max(10, Math.min(95, p.moisture + drift));
+          const pump = autoMode ? evaluatePump(newMoisture) : p.pump;
+          if (pump !== p.pump && autoMode) {
+            addAlert(
+              `${p.name}: Pump ${pump ? "activated" : "stopped"} (moisture ${newMoisture.toFixed(1)}%)`,
+              pump ? "warning" : "success"
+            );
+          }
+          return { ...p, moisture: parseFloat(newMoisture.toFixed(1)), pump };
+        })
+      );
+      setTotalWaterSaved(v => parseFloat((v + (Math.random() * 0.02)).toFixed(2)));
+    }, 2000);
+    return () => clearInterval(tick);
+  }, [autoMode, addAlert]);
+
+  const togglePump = (id) => {
+    setPlants(prev =>
+      prev.map(p => {
+        if (p.id !== id) return p;
+        const pump = !p.pump;
+        addAlert(`${p.name}: Pump manually ${pump ? "ON" : "OFF"}`, pump ? "warning" : "info");
+        return { ...p, pump };
+      })
+    );
+  };
+
+  const activePlants = plants.filter(p => p.pump).length;
+  const avgMoisture = (plants.reduce((a, p) => a + p.moisture, 0) / plants.length).toFixed(1);
+
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="header-left">
+          <div className="logo">
+            <span className="logo-icon">🌿</span>
+            <div>
+              <h1>HydroRoot</h1>
+              <p>Smart Root-Level Irrigation System</p>
+            </div>
+          </div>
+        </div>
+        <div className="header-center">
+          <nav className="nav">
+            {["dashboard", "plants", "analytics", "alerts"].map(tab => (
+              <button
+                key={tab}
+                className={`nav-btn ${activeTab === tab ? "active" : ""}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === "alerts" && alerts.length > 0 && (
+                  <span className="badge">{alerts.length}</span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="header-right">
+          <div className="auto-toggle">
+            <span>Auto Mode</span>
+            <button
+              className={`toggle ${autoMode ? "on" : "off"}`}
+              onClick={() => {
+                setAutoMode(v => !v);
+                addAlert(`Auto mode ${!autoMode ? "enabled" : "disabled"}`, "info");
+              }}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
+          <div className="clock">{time.toLocaleTimeString()}</div>
+        </div>
+      </header>
+
+      <main className="main">
+        {activeTab === "dashboard" && (
+          <Dashboard
+            plants={plants}
+            activePlants={activePlants}
+            avgMoisture={avgMoisture}
+            totalWaterSaved={totalWaterSaved}
+            history={history}
+            togglePump={togglePump}
+            autoMode={autoMode}
+          />
+        )}
+        {activeTab === "plants" && (
+          <PlantGrid plants={plants} togglePump={togglePump} autoMode={autoMode} />
+        )}
+        {activeTab === "analytics" && (
+          <WaterUsageChart history={history} plants={plants} />
+        )}
+        {activeTab === "alerts" && (
+          <AlertLog alerts={alerts} onClear={() => setAlerts([])} />
+        )}
+      </main>
+    </div>
+  );
+}
