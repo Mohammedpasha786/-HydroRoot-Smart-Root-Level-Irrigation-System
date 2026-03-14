@@ -28,7 +28,6 @@ smart-irrigation/
 ├── package.json
 ├── vite.config.js
 └── README.md
-
 Quick Start — Web Dashboard
 bash# 1. Install dependencies
 npm install
