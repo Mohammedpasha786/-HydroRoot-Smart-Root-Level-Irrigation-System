@@ -1,0 +1,30 @@
+/**
+ * Core irrigation decision logic
+ * Mirrors the Arduino firmware decision tree
+ */
+
+export const MOISTURE_THRESHOLDS = {
+  CRITICAL_DRY: 20,   // Immediate irrigation
+  DRY:          35,   // Start irrigation
+  OPTIMAL_LOW:  40,
+  OPTIMAL_HIGH: 65,
+  WET:          75,   // Stop irrigation
+  SATURATED:    90,   // Warning: overwatered
+};
+
+export function evaluatePump(moisture, threshold = 35) {
+  return moisture < threshold;
+}
+
+export function getMoistureStatus(moisture) {
+  if (moisture < MOISTURE_THRESHOLDS.CRITICAL_DRY) return { label: "Critical", color: "#ff3b30", emoji: "🔴" };
+  if (moisture < MOISTURE_THRESHOLDS.DRY)          return { label: "Dry",      color: "#ff9500", emoji: "🟠" };
+  if (moisture < MOISTURE_THRESHOLDS.OPTIMAL_HIGH) return { label: "Optimal",  color: "#34c759", emoji: "🟢" };
+  if (moisture < MOISTURE_THRESHOLDS.WET)          return { label: "Moist",    color: "#30b0c7", emoji: "🔵" };
+  return                                                   { label: "Saturated",color: "#5856d6", emoji: "🟣" };
+}
+
+export function estimateWaterSaving(pumpsOff, intervalHours = 1) {
+  // Average pump: 2 L/min → 120 L/hr
+  return (pumpsOff * 120 * intervalHours).toFixed(1);
+}
